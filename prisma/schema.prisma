@@ -1,0 +1,348 @@
+// Monolith – single PostgreSQL schema
+
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["driverAdapters"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ---- Auth ----
+enum Role {
+  ADMIN
+  SELLER
+  CUSTOMER
+}
+
+model User {
+  id                     String    @id @default(uuid())
+  email                  String    @unique
+  passwordHash           String
+  role                   Role      @default(CUSTOMER)
+  emailVerified          Boolean   @default(false)
+  emailVerifiedAt        DateTime?
+  createdAt              DateTime  @default(now())
+  refreshTokens          RefreshToken[]
+  sessions               Session[]
+  passwordResetTokens    PasswordResetToken[]
+  emailVerificationTokens EmailVerificationToken[]
+}
+
+model RefreshToken {
+  id        String   @id @default(uuid())
+  token     String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Session {
+  id        String   @id @default(uuid())
+  ip        String?
+  userAgent String?
+  createdAt DateTime @default(now())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model PasswordResetToken {
+  id        String   @id @default(uuid())
+  token     String   @unique
+  userId    String
+  expiresAt DateTime
+  used      Boolean  @default(false)
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model EmailVerificationToken {
+  id        String   @id @default(uuid())
+  token     String   @unique
+  userId    String
+  expiresAt DateTime
+  used      Boolean  @default(false)
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// ---- Product & Category ----
+enum ProductStatus {
+  draft
+  active
+  inactive
+  archived
+}
+
+enum CategoryStatus {
+  active
+  inactive
+}
+
+model Category {
+  id          String         @id @default(uuid())
+  name        String         @db.VarChar(100)
+  slug        String?        @unique
+  description String?        @db.Text
+  parentId    String?
+  image       String?
+  status      CategoryStatus @default(active)
+  sortOrder   Int            @default(0)
+  metadata    Json?
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+  parent      Category?      @relation("CategoryHierarchy", fields: [parentId], references: [id], onDelete: SetNull)
+  children    Category[]     @relation("CategoryHierarchy")
+  products    Product[]
+  @@index([name])
+  @@index([slug])
+  @@index([parentId, status])
+}
+
+model Product {
+  id              String        @id @default(uuid())
+  title           String        @db.VarChar(200)
+  description     String?       @db.Text
+  sku             String?       @unique
+  categoryId      String?
+  sellerId        String
+  images          String[]      @default([])
+  price           Float
+  compareAtPrice  Float?
+  cost            Float?
+  stock           Int           @default(0)
+  status          ProductStatus @default(draft)
+  variants        Json?
+  tags            String[]      @default([])
+  weight          Float?
+  dimensions      Json?
+  metadata        Json?
+  slug            String?       @unique
+  metaTitle       String?
+  metaDescription String?      @db.Text
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  category        Category?     @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  @@index([title])
+  @@index([sku])
+  @@index([categoryId, status])
+  @@index([sellerId, status])
+  @@index([status, createdAt(sort: Desc)])
+  @@index([slug])
+}
+
+// ---- Review ----
+enum ReviewStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model Review {
+  id        String      @id @default(uuid())
+  productId String
+  userId    String
+  rating    Int
+  comment   String?     @db.Text
+  status    ReviewStatus @default(PENDING)
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+  @@index([productId])
+  @@index([userId])
+  @@index([status])
+  @@index([productId, status])
+}
+
+// ---- Cart ----
+model Cart {
+  id        String     @id @default(uuid())
+  userId    String?
+  guestId   String?
+  createdAt DateTime   @default(now())
+  items     CartItem[]
+}
+
+model CartItem {
+  id        String   @id @default(uuid())
+  cartId    String
+  productId String
+  quantity  Int
+  cart      Cart     @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  @@unique([cartId, productId])
+}
+
+// ---- Order ----
+enum OrderStatus {
+  CREATED
+  PAID
+  SHIPPED
+  DELIVERED
+  CANCELED
+  RETURNED
+}
+
+model Order {
+  id        String      @id @default(uuid())
+  userId    String
+  status    OrderStatus @default(CREATED)
+  total     Float
+  createdAt DateTime    @default(now())
+  items     OrderItem[]
+}
+
+model OrderItem {
+  id        String   @id @default(uuid())
+  orderId   String
+  productId String
+  quantity  Int
+  price     Float
+  order     Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+}
+
+// ---- Payment ----
+enum PaymentStatus {
+  PENDING
+  SUCCESS
+  FAILED
+}
+
+model Payment {
+  id         String        @id @default(uuid())
+  orderId    String
+  userId     String
+  amount     Float
+  status     PaymentStatus @default(PENDING)
+  createdAt  DateTime      @default(now())
+}
+
+model TransactionLog {
+  id         String   @id @default(uuid())
+  paymentId  String
+  payload    String   @db.Text
+  createdAt  DateTime @default(now())
+}
+
+// ---- Pricing ----
+model Price {
+  id         String   @id @default(uuid())
+  productId  String   @unique
+  basePrice  Float
+  currency   String
+  createdAt  DateTime @default(now())
+}
+
+model PriceHistory {
+  id        String   @id @default(uuid())
+  productId String
+  price     Float
+  createdAt DateTime @default(now())
+}
+
+model Discount {
+  id        String   @id @default(uuid())
+  productId String
+  percent   Float
+  startsAt  DateTime
+  endsAt    DateTime
+}
+
+model Coupon {
+  id        String   @id @default(uuid())
+  code      String   @unique
+  percent   Float
+  startsAt  DateTime
+  endsAt    DateTime
+}
+
+model FlashSale {
+  id        String   @id @default(uuid())
+  productId String
+  price     Float
+  startsAt  DateTime
+  endsAt    DateTime
+}
+
+// ---- Inventory ----
+model Warehouse {
+  id        String          @id @default(uuid())
+  name      String
+  location  String
+  createdAt DateTime        @default(now())
+  items     InventoryItem[]
+}
+
+model InventoryItem {
+  id          String     @id @default(uuid())
+  productId   String
+  warehouseId String
+  quantity    Int
+  reserved    Int        @default(0)
+  updatedAt   DateTime   @updatedAt
+  warehouse   Warehouse  @relation(fields: [warehouseId], references: [id], onDelete: Cascade)
+}
+
+model Reservation {
+  id         String   @id @default(uuid())
+  productId  String
+  quantity   Int
+  orderId    String
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+}
+
+// ---- Seller ----
+model Seller {
+  id        String         @id @default(uuid())
+  userId    String
+  storeName String
+  status    String
+  createdAt DateTime       @default(now())
+  metrics   SellerMetrics?
+}
+
+model SellerMetrics {
+  id         String   @id @default(uuid())
+  sellerId   String   @unique
+  totalSales Float    @default(0)
+  orders     Int      @default(0)
+  seller     Seller   @relation(fields: [sellerId], references: [id], onDelete: Cascade)
+}
+
+// ---- Shipping ----
+model Address {
+  id        String   @id @default(uuid())
+  userId    String
+  line1     String
+  line2     String?
+  city      String
+  state     String
+  postal    String
+  country   String
+  createdAt DateTime @default(now())
+}
+
+model Shipment {
+  id         String   @id @default(uuid())
+  orderId    String
+  carrier    String
+  trackingId String
+  status     String
+  createdAt  DateTime @default(now())
+}
+
+// ---- Notification ----
+enum Channel {
+  EMAIL
+  SMS
+}
+
+model Notification {
+  id        String   @id @default(uuid())
+  userId    String?
+  channel   Channel
+  message   String   @db.Text
+  createdAt DateTime @default(now())
+}
