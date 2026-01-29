@@ -31,3 +31,11 @@ export const verifyEmailSchema = z.object({
 export const resendVerificationSchema = z.object({
   email: z.string().email()
 });
+
+export const introspectSchema = z.object({
+  token: z.string().optional()
+});
+
+export const logoutSchema = z.object({
+  refreshToken: z.string().optional()
+});

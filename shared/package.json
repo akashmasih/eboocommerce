@@ -6,9 +6,9 @@
   "dependencies": {
     "amqplib": "^0.10.3",
     "axios": "^1.6.7",
+    "eboocommerce": "file:..",
     "express": "^4.19.2",
     "jsonwebtoken": "^9.0.2",
-    "mongoose": "^8.2.0",
     "pino": "^8.20.0",
     "swagger-jsdoc": "^6.2.8",
     "swagger-ui-express": "^5.0.0",

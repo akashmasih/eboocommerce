@@ -1,4 +1,4 @@
-﻿# E-boo Ecommerce Platform (Microservices)
+# E-boo Ecommerce Platform (Microservices)
 
 E-boo is a production-grade, enterprise-scale e-commerce platform designed with a **Node.js + Express.js + TypeScript** microservices architecture.
 
@@ -10,8 +10,7 @@ E-boo is a production-grade, enterprise-scale e-commerce platform designed with 
 - **REST**: Public and internal service-to-service APIs.
 - **GraphQL**: Internal aggregation layer for frontend (BFF).
 - **Datastores**:
-  - **PostgreSQL** for transactional services (auth, pricing, inventory, cart, order, payment, seller, shipping, notifications).
-  - **MongoDB** for catalog and reviews.
+  - **PostgreSQL** (single database) for all services (auth, product, pricing, inventory, cart, order, payment, seller, shipping, notifications, reviews).
   - **Redis** for caching, sessions, rate limiting.
 - **Event-driven integration**: RabbitMQ topics for order/payment/notification events.
 - **API Documentation**: Auto-generated Swagger/OpenAPI docs for each service.

@@ -48,10 +48,8 @@ const options: swaggerJsdoc.Options = {
     tags: []
   },
   apis: [
-    path.join(__dirname, '../../services/*/src/routes/**/*.ts'),
-    path.join(__dirname, '../../services/*/src/controllers/**/*.ts'),
-    './src/routes/**/*.ts',
-    './src/controllers/**/*.ts'
+    path.join(process.cwd(), 'src/routes/**/*.ts'),
+    path.join(process.cwd(), 'src/controllers/**/*.ts')
   ]
 };
 

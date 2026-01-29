@@ -12,10 +12,15 @@ import { errorHandler } from '../../../shared/middleware/errorHandler';
 import { setupGracefulShutdown } from '../../../shared/utils/gracefulShutdown';
 import { setupSwagger } from '../../../shared/utils/swagger';
 import { prisma } from './repositories/prisma';
+import { env } from './config/env';
+
+const corsOrigins = env.CORS_ORIGINS
+  ? env.CORS_ORIGINS.split(',').map((o) => o.trim()).filter(Boolean)
+  : undefined;
 
 const app = express();
 app.use(express.json({ limit: '10mb' }));
-app.use(cors());
+app.use(cors({ origin: corsOrigins ?? true, credentials: true }));
 app.use(helmet());
 app.use(morgan('combined'));
 app.use(requestTracing);

@@ -6,8 +6,7 @@ type EnvSchema = {
   SERVICE_NAME: string;
   LOG_LEVEL?: string;
   REDIS_URL?: string;
-  DATABASE_URL?: string;
-  MONGO_URI?: string;
+  DATABASE_URL: string; // Required for Prisma services
 };
 
 const schema = z.object({
@@ -15,8 +14,7 @@ const schema = z.object({
   SERVICE_NAME: z.string(),
   LOG_LEVEL: z.string().optional(),
   REDIS_URL: z.string().optional(),
-  DATABASE_URL: z.string(),
-  MONGO_URI: z.string().optional()
+  DATABASE_URL: z.string() // Required for Prisma services
 });
 
 export const env = loadEnvFromShared(schema) as EnvSchema;

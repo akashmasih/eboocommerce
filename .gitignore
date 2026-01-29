@@ -41,6 +41,9 @@ prisma/migrations/
 coverage/
 .nyc_output/
 
+# Uploads (user-uploaded images)
+uploads/
+
 # Misc
 *.pem
 .cache/

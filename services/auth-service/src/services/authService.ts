@@ -8,9 +8,7 @@ import { emailVerificationRepository } from '../repositories/emailVerificationRe
 import { emailService } from '../utils/emailService';
 import { logger } from '../../../../shared/utils/logger';
 import { UnauthorizedError, NotFoundError, ConflictError, ValidationError } from '../../../../shared/utils/errors';
-
-const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret';
-const JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET || 'dev-refresh';
+import { env } from '../config/env';
 
 export interface RegisterInput {
   email: string;
@@ -151,7 +149,7 @@ export class AuthService {
 
     // Verify token signature
     try {
-      jwt.verify(refreshToken, JWT_REFRESH_SECRET);
+      jwt.verify(refreshToken, env.JWT_REFRESH_SECRET);
     } catch {
       throw new UnauthorizedError('Invalid refresh token');
     }
@@ -184,17 +182,51 @@ export class AuthService {
   private generateTokens(userId: string, role: string): TokenResult {
     const accessToken = jwt.sign(
       { sub: userId, role },
-      JWT_SECRET,
+      env.JWT_SECRET,
       { expiresIn: '15m' }
     );
 
     const refreshToken = jwt.sign(
       { sub: userId },
-      JWT_REFRESH_SECRET,
+      env.JWT_REFRESH_SECRET,
       { expiresIn: '7d' }
     );
 
     return { accessToken, refreshToken };
+  }
+
+  /**
+   * Introspect token (SSO) – validate access token and return claims for other services
+   */
+  introspectToken(accessToken: string): { active: boolean; sub?: string; role?: string; exp?: number } {
+    if (!accessToken?.trim()) {
+      return { active: false };
+    }
+    try {
+      const decoded = jwt.verify(accessToken.trim(), env.JWT_SECRET) as { sub: string; role: string; exp: number };
+      return {
+        active: true,
+        sub: decoded.sub,
+        role: decoded.role,
+        exp: decoded.exp
+      };
+    } catch {
+      return { active: false };
+    }
+  }
+
+  /**
+   * Logout (SSO) – revoke refresh token so client cannot obtain new access tokens
+   */
+  async logout(refreshToken: string): Promise<void> {
+    if (!refreshToken?.trim()) return;
+    try {
+      jwt.verify(refreshToken.trim(), env.JWT_REFRESH_SECRET);
+      await tokenRepository.deleteRefreshToken(refreshToken.trim());
+      logger.info('Refresh token revoked (logout)');
+    } catch {
+      // Invalid or expired – treat as already logged out
+    }
   }
 
   /**

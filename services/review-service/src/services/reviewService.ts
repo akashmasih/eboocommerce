@@ -1,5 +1,6 @@
 import { reviewRepository } from '../repositories/reviewRepository';
 import { ValidationError, NotFoundError } from '../../../../shared/utils/errors';
+import { ReviewStatus } from '@prisma/client';
 
 export interface CreateReviewInput {
   productId: string;
@@ -12,11 +13,11 @@ export interface CreateReviewInput {
  * Review Service - Business Logic Layer
  */
 export class ReviewService {
-  async list(productId: string) {
+  async list(productId: string, status?: ReviewStatus) {
     if (!productId) {
       throw new ValidationError('ProductId is required');
     }
-    return reviewRepository.listByProduct(productId);
+    return reviewRepository.listByProduct(productId, status);
   }
 
   async create(input: CreateReviewInput) {
@@ -30,15 +31,17 @@ export class ReviewService {
 
     // Transform data
     const data = {
-      ...input,
-      status: 'PENDING', // New reviews need moderation
-      createdAt: new Date()
+      productId: input.productId,
+      userId: input.userId,
+      rating: input.rating,
+      comment: input.comment,
+      status: 'PENDING' as ReviewStatus // New reviews need moderation
     };
 
     return reviewRepository.create(data);
   }
 
-  async moderate(id: string, status: string) {
+  async moderate(id: string, status: ReviewStatus) {
     if (!id) {
       throw new ValidationError('Review ID is required');
     }
@@ -52,6 +55,13 @@ export class ReviewService {
     }
 
     return reviewRepository.moderate(id, status);
+  }
+
+  async getAverageRating(productId: string) {
+    if (!productId) {
+      throw new ValidationError('ProductId is required');
+    }
+    return reviewRepository.getAverageRating(productId);
   }
 }
 

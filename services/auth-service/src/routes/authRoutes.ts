@@ -8,7 +8,9 @@ import {
   requestPasswordResetSchema,
   resetPasswordSchema,
   verifyEmailSchema,
-  resendVerificationSchema
+  resendVerificationSchema,
+  introspectSchema,
+  logoutSchema
 } from '../../../../shared/schemas/authSchemas';
 import { authenticate } from '../../../../shared/middleware/auth';
 
@@ -218,5 +220,58 @@ router.post('/email/verify', validate(verifyEmailSchema), authController.verifyE
  *         description: Verification email sent (if email exists and not verified)
  */
 router.post('/email/resend', validate(resendVerificationSchema), authController.resendVerificationEmail);
+
+/**
+ * @swagger
+ * /auth/introspect:
+ *   post:
+ *     summary: SSO – Introspect access token
+ *     tags: [Auth]
+ *     description: Validate an access token. Use from other services or send token in body or Authorization header.
+ *     requestBody:
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               token:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Introspection result with active, sub, role, exp
+ */
+router.post('/introspect', validate(introspectSchema), authController.introspect);
+
+/**
+ * @swagger
+ * /auth/logout:
+ *   post:
+ *     summary: SSO – Logout (revoke refresh token)
+ *     tags: [Auth]
+ *     requestBody:
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               refreshToken:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Logged out successfully
+ */
+router.post('/logout', validate(logoutSchema), authController.logout);
+
+/**
+ * @swagger
+ * /auth/.well-known/openid-configuration:
+ *   get:
+ *     summary: SSO – OIDC discovery
+ *     tags: [Auth]
+ *     responses:
+ *       200:
+ *         description: OpenID Connect discovery document
+ */
+router.get('/.well-known/openid-configuration', authController.openIdConfiguration);
 
 export default router;

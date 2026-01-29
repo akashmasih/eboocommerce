@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { reviewService } from '../services/reviewService';
+import { ReviewStatus } from '@prisma/client';
 
 /**
  * Review Controller - HTTP Request/Response Layer
@@ -7,7 +8,8 @@ import { reviewService } from '../services/reviewService';
 export const reviewController = {
   list: async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const reviews = await reviewService.list(req.params.productId);
+      const status = req.query.status as ReviewStatus | undefined;
+      const reviews = await reviewService.list(req.params.productId, status);
       res.json(reviews);
     } catch (error) {
       next(error);
@@ -25,8 +27,18 @@ export const reviewController = {
 
   moderate: async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const review = await reviewService.moderate(req.params.id, req.body.status);
+      const status = req.body.status as ReviewStatus;
+      const review = await reviewService.moderate(req.params.id, status);
       res.json(review);
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  getAverageRating: async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const rating = await reviewService.getAverageRating(req.params.productId);
+      res.json(rating);
     } catch (error) {
       next(error);
     }
