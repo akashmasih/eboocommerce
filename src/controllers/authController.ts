@@ -27,8 +27,13 @@ export const authController = {
   login: async (req: Request, res: Response, next: NextFunction) => {
     try {
       const { email, password } = req.body;
-      const result = await authService.login({ email, password });
-      res.json(result);
+      const {user,accessToken,refreshToken} = await authService.login({ email, password });
+      res.cookie("refershToken",refreshToken,{
+        httpOnly:true,
+        sameSite: true,
+        maxAge :  7 * 24 * 3600 * 1000
+      })
+      res.json({user,accessToken});
     } catch (error) {
       next(error);
     }
