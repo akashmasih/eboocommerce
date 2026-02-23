@@ -5,6 +5,7 @@ import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
+import cookieParser from 'cookie-parser';
 import router from './routes';
 import { requestTracing } from './shared/utils/tracing';
 import { logger } from './shared/utils/logger';
@@ -20,6 +21,7 @@ const corsOrigins = env.CORS_ORIGINS
 
 const app = express();
 app.use(express.json({ limit: '10mb' }));
+app.use(cookieParser());
 app.use(cors({ origin: corsOrigins ?? true, credentials: true }));
 app.use(helmet());
 app.use(morgan('combined'));

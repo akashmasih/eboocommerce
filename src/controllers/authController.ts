@@ -14,8 +14,13 @@ export const authController = {
   register: async (req: Request, res: Response, next: NextFunction) => {
     try {
       const { email, password, role } = req.body;
-      const result = await authService.register({ email, password, role });
-      res.status(201).json(result);
+      const { user, accessToken, refreshToken } = await authService.register({ email, password, role });
+      res.cookie("refreshToken", refreshToken, {
+        httpOnly: true,
+        sameSite: true,
+        maxAge: 7 * 24 * 3600 * 1000
+      });
+      res.status(201).json({ user, accessToken });
     } catch (error) {
       next(error);
     }
@@ -27,13 +32,13 @@ export const authController = {
   login: async (req: Request, res: Response, next: NextFunction) => {
     try {
       const { email, password } = req.body;
-      const {user,accessToken,refreshToken} = await authService.login({ email, password });
-      res.cookie("refershToken",refreshToken,{
-        httpOnly:true,
+      const { user, accessToken, refreshToken } = await authService.login({ email, password });
+      res.cookie("refreshToken", refreshToken, {
+        httpOnly: true,
         sameSite: true,
-        maxAge :  7 * 24 * 3600 * 1000
+        maxAge: 7 * 24 * 3600 * 1000
       })
-      res.json({user,accessToken});
+      res.json({ user, accessToken });
     } catch (error) {
       next(error);
     }
@@ -44,9 +49,18 @@ export const authController = {
    */
   refresh: async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const { refreshToken } = req.body;
-      const result = await authService.refreshToken(refreshToken);
-      res.json(result);
+      const token = req.cookies?.refreshToken || req.body?.refreshToken;
+      if (!token) {
+        res.status(401).json({ message: 'Refresh token is required' });
+        return;
+      }
+      const { accessToken, refreshToken } = await authService.refreshToken(token);
+      res.cookie("refreshToken", refreshToken, {
+        httpOnly: true,
+        sameSite: true,
+        maxAge: 7 * 24 * 3600 * 1000
+      });
+      res.json({ accessToken });
     } catch (error) {
       next(error);
     }
@@ -123,8 +137,9 @@ export const authController = {
    */
   logout: async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const refreshToken = req.body?.refreshToken ?? req.headers.authorization?.replace(/^Bearer\s+/i, '') ?? '';
+      const refreshToken = req.cookies?.refreshToken ?? req.body?.refreshToken ?? req.headers.authorization?.replace(/^Bearer\s+/i, '') ?? '';
       await authService.logout(refreshToken);
+      res.clearCookie("refreshToken");
       res.json({ message: 'Logged out successfully' });
     } catch (error) {
       next(error);

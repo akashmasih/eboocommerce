@@ -84,14 +84,18 @@ router.post('/login', validate(loginSchema), authController.login);
  *   post:
  *     summary: Refresh access token
  *     tags: [Auth]
+ *     parameters:
+ *       - in: cookie
+ *         name: refreshToken
+ *         schema:
+ *           type: string
+ *         description: Refresh token cookie
  *     requestBody:
- *       required: true
+ *       required: false
  *       content:
  *         application/json:
  *           schema:
  *             type: object
- *             required:
- *               - refreshToken
  *             properties:
  *               refreshToken:
  *                 type: string
@@ -248,6 +252,12 @@ router.post('/introspect', validate(introspectSchema), authController.introspect
  *   post:
  *     summary: SSO – Logout (revoke refresh token)
  *     tags: [Auth]
+ *     parameters:
+ *       - in: cookie
+ *         name: refreshToken
+ *         schema:
+ *           type: string
+ *         description: Refresh token cookie
  *     requestBody:
  *       content:
  *         application/json:

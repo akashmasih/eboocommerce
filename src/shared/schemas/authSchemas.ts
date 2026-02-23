@@ -12,7 +12,7 @@ export const loginSchema = z.object({
 });
 
 export const refreshSchema = z.object({
-  refreshToken: z.string()
+  refreshToken: z.string().optional()
 });
 
 export const requestPasswordResetSchema = z.object({
